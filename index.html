@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Vue Facebook Post Comments</title>
+    <link rel="stylesheet" href="">
+    <link href="css/fonts.css" rel="stylesheet">
+    <script src="js/vue.js"></script>
+    <script src="js/axios.min.js"></script>
+    <script src="js/moment.js"></script>
+    <script src="js/es-do.js"></script>
+</head>
+
+<body>
+    <style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        font-family: roboto;
+        width: 275px;
+        padding: 10px;
+        background-color: white;
+    }
+    
+    h3 {
+        text-transform: uppercase;
+        background-color: #c6312B;
+        padding: 10px;
+        color: white;
+    }
+    
+    .inner-comments {
+        font-size: 14px;
+        padding: 10px;
+    }
+    
+    .comment-block {
+        display: block;
+        padding: 14px 0;
+        border-bottom: 1px dashed black;
+    }
+    
+    .nombre {
+        font-weight: 700;
+        color: #c6312B;
+    }
+    
+    .comentario {
+        color: #696969;
+        font-size: 12px;
+    }
+    
+    .date {
+        font-size: 12px;
+        color: #aaa;
+    }
+    </style>
+    <div id="comments">
+        <h3>Comments:</h3>
+        <div class="inner-comments" v-for="comment in comments">
+            <div class="comment-block">
+                <span class="nombre">{{comment.name}}: </span>
+                <br/>
+                <span class="comentario">{{comment.comment}}</span>
+                <br/>
+            </div>
+            <!--<span class="date">{{comment.time}} </span><br/>-->
+            <!--ID: {{comment.id}}-->
+        </div>
+    </div>
+    <script>
+    var vm = new Vue({
+        el: '#comments',
+        data: {
+            commentslist: [],
+            postId: '', //the ID of the post you want to render, Example: 1674848585859267
+            accessToken: '', //your facebook App Access Token, Example: 683983618426485%7CL5yfENBrHnAnHnZn8wlNTlx3buU
+            comments: [], //the array that will store the new comments
+        },
+        mounted: function() {
+            setInterval(() => {
+                this.getComments();
+            }, 5000);
+        },
+        methods: {
+            getComments: function() {
+                axios.get('https://graph.facebook.com/' + this.postId + '/comments?access_token=' + this.accessToken + '&order=reverse_chronological&limit=5').then((response) => {
+                    this.commentslist = response.data;
+
+                    //first we check if the comment already exists
+                    for (let k in this.commentslist.data) {
+                        var lastComment = this.comments.filter((item) => {
+                            return item.id == this.commentslist.data[k].id;
+                        }).length;
+                        //we set the date for a legible format
+                        moment().format();
+                        moment().locale('es');
+
+                        //if the comment doesn't exists, we add it to the queue
+                        if (lastComment == 0) {
+                            this.comments.reverse();
+                            this.comments.push({
+                                name: this.commentslist.data[k].from.name,
+                                comment: this.commentslist.data[k].message,
+                                time: moment(this.commentslist.data[k].created_time, "YYYYMMDD").fromNow(),
+                                id: this.commentslist.data[k].id
+                            });
+                            this.comments.reverse();
+                        }
+                    }
+                }).catch(function(error) {
+                    console.log(error);
+                });
+            },
+        },
+    });
+    </script>
+</body>
+
+</html>
